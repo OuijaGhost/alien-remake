@@ -292,6 +292,11 @@ class GameFlow:
         )
         #: Which answer the first-run question is sitting on.
         self.edition_row = 0
+        #: DEC-047, UPDATED only: which row the GAME_SELECTION highlight bar
+        #: is sitting on. See `_on_selection`'s own comment - the ROM's real
+        #: screen has no such cursor at all (D-018), so this only moves
+        #: anything under UPDATED.
+        self.selection_row = 0
         # Which instruction page is showing (R-12/R-31; INSTRUCTION_PAGES only).
         self.instruction_page = 0
         #: Which page of the remake-only MANUAL screen is showing. Separate
@@ -645,21 +650,53 @@ class GameFlow:
         self._screen_ticks = 0
         self.screen = Screen.LOADING_MENU
 
+    def _selection_row_events(self) -> tuple[InputEvent, ...]:
+        """Which ``SELECT_*`` event each GAME_SELECTION row fires, in the
+        order `render/frontend.py::_draw_selection` draws them - CREDITS
+        included only when it would actually be shown (DEC-047)."""
+        events = [
+            InputEvent.SELECT_FULL, InputEvent.SELECT_SHORT,
+            InputEvent.SELECT_INSTRUCTIONS, InputEvent.SELECT_OPTIONS,
+        ]
+        if not is_original(self.options.as_dict()):
+            events.append(InputEvent.SELECT_CREDITS)
+        return tuple(events)
+
     def _on_selection(self, event: InputEvent) -> None:
-        """Game-selection input — Ctrl+1 / Ctrl+2 ONLY (D-018 live-confirmed
-        `$5F36` polls keyboard latch `$91` for exactly these two chords).
+        """Game-selection input — Ctrl+1 / Ctrl+2 ONLY under ORIGINAL
+        (D-018 live-confirmed `$5F36` polls keyboard latch `$91` for exactly
+        these two chords).
 
-        The invented up/down cursor, ">" marker, and fire-select are correctly
-        removed here (this module only sees the already-classified
-        ``SELECT_FULL``/``SELECT_SHORT`` events, not raw keys).
+        **DEC-047, UPDATED only: a highlight-bar cursor, reintroduced.** An
+        up/down cursor with a ">" marker and fire-to-select was built once,
+        found to not match the ROM's real screen (D-018: it only responds to
+        specific keyboard chords, no cursor at all), and removed as an
+        invention (see the git history around FV-1c1/FV-1c2). The owner
+        asked for it back for exactly the case D-018's chord requirement
+        makes awkward on hardware with no keyboard at all (a gamepad-only
+        Steam Deck setup): gated to UPDATED, so ORIGINAL keeps behaving
+        exactly like the disk (a Steam Input remap to send the literal
+        Ctrl+1/Ctrl+2 chord is the documented way to reach this screen under
+        ORIGINAL without a keyboard - see the README's Steam Deck section).
 
-        The CHORD requirement is enforced in the backend, where the raw key and
-        its modifiers are still visible: `render/pygame_app.py` drops
-        `SELECT_FULL`/`SELECT_SHORT` on GAME_SELECTION unless `KMOD_CTRL` is
-        held. WELCOME's "1 ALIEN" is genuinely bare and stays unmodified. (FV-1c1
-        found this unenforced and FV-1c2 fixed it; the gap notice that used to
-        stand here outlived the gap by a month.)
+        The CHORD requirement itself is still enforced in the backend, where
+        the raw key and its modifiers are visible: `render/pygame_app.py`
+        drops `SELECT_FULL`/`SELECT_SHORT` on GAME_SELECTION unless
+        `KMOD_CTRL` is held, when the current profile is ORIGINAL. WELCOME's
+        "1 ALIEN" is genuinely bare and stays unmodified. (FV-1c1 found this
+        unenforced and FV-1c2 fixed it; the gap notice that used to stand
+        here outlived the gap by a month.)
         """
+        if (event in (InputEvent.UP, InputEvent.DOWN)
+                and not is_original(self.options.as_dict())):
+            total = len(self._selection_row_events())
+            step = -1 if event is InputEvent.UP else 1
+            self.selection_row = (self.selection_row + step) % total
+            return
+        if (event is InputEvent.FIRE
+                and not is_original(self.options.as_dict())):
+            events = self._selection_row_events()
+            event = events[self.selection_row % len(events)]
         if event is InputEvent.SELECT_FULL:
             self._start(GameMode.FULL)
         elif event is InputEvent.SELECT_SHORT:

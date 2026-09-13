@@ -364,6 +364,17 @@ plus your image.
    | Start | full game (`1`) |
    | Select | short scenario (`2`) |
 
+   **Under the Updated preset**, that's everything you need — the Full
+   Game / Short Scenario chooser has a highlight bar under Updated, so
+   D-pad + A alone picks anything on it (Instructions, Options, Credits
+   included), no numbered shortcut required.
+
+   **Under Original**, the real disk's screen has no highlight bar at
+   all — it answers only the literal Ctrl+1 / Ctrl+2 chord, so Start/Select
+   above won't reach it. Bind two spare buttons to send that chord
+   directly instead (Controller Layout lets you map a button to a keyboard
+   combo): e.g. **X → Ctrl+1**, **Y → Ctrl+2**.
+
 ### Options without a keyboard
 
 Game Mode launches a program with no arguments, so `--crt full` has nowhere to
@@ -730,8 +741,6 @@ above avoids Proton's filesystem mapping entirely.
 
 ### What is still rough
 
-* No in-game options screen yet, so the settings file is the way to change
-  anything without a keyboard.
 * The debug overlay's memory readout is Windows-only and shows `n/a` on Linux.
   Nothing else is platform-specific.
 * This has been verified on Linux paths and by a clean-room install, but not yet

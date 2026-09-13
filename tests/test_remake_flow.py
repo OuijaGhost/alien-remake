@@ -12,6 +12,7 @@ from alien_remake.core.flow import (
 )
 from alien_remake.core.modes import FrontEnd, DeathVariant, GameMode
 from alien_remake.core.state import GamePhase
+from alien_remake.core import options
 
 
 # The key that advances each input-gated front-end screen toward the game.
@@ -111,8 +112,11 @@ def test_title_auto_advances_on_a_timer_not_input() -> None:
 
 def test_selection_is_ctrl_1_ctrl_2_only() -> None:
     # R-32: the real selection loop polls only for Ctrl+1 / Ctrl+2 — no cursor,
-    # no fire-select. Up/down/fire do nothing.
-    flow = GameFlow()
+    # no fire-select, under ORIGINAL. Up/down/fire do nothing there (DEC-047
+    # gates the reintroduced cursor to everything that is not ORIGINAL, so
+    # this needs to ask for ORIGINAL explicitly rather than trust the
+    # constructor's own defaults, which are not it).
+    flow = GameFlow(current_options=dict(options.PROFILES["original"]))
     _tick_until(flow, Screen.GAME_SELECTION)
     for ignored in (InputEvent.UP, InputEvent.DOWN, InputEvent.FIRE):
         flow.handle(ignored)
@@ -125,8 +129,46 @@ def test_selection_is_ctrl_1_ctrl_2_only() -> None:
     assert flow.screen is Screen.INTRO_PROMPT
     flow.handle(InputEvent.NO)                   # $4425 CMP #$27
     assert flow.screen is Screen.OPENING
+
+
+def test_selection_has_a_highlight_bar_cursor_under_updated() -> None:
+    """**DEC-047** — reintroduced, gated to everything that is not ORIGINAL.
+
+    Up/down moves `selection_row` and wraps; fire activates whichever row
+    it is sitting on, in the same order `_draw_selection` draws them
+    (FULL, SHORT, INSTRUCTIONS, OPTIONS, CREDITS).
+    """
+    flow = GameFlow(current_options=dict(options.PROFILES["updated"]))
+    _tick_until(flow, Screen.GAME_SELECTION)
+    assert flow.selection_row == 0
+
+    flow.handle(InputEvent.DOWN)
+    assert flow.selection_row == 1
+    assert flow.screen is Screen.GAME_SELECTION, "down alone must not select"
+
+    flow.handle(InputEvent.UP)
+    assert flow.selection_row == 0
+
+    flow.handle(InputEvent.UP)          # wraps to the last row (CREDITS, 4)
+    assert flow.selection_row == 4
+
+    flow.handle(InputEvent.DOWN)
+    assert flow.selection_row == 0
+    flow.handle(InputEvent.FIRE)        # row 0 == SELECT_FULL
     assert flow.sim is not None
-    assert flow.sim.state.mode is GameMode.SHORT
+    assert flow.screen not in (Screen.GAME_SELECTION,)
+
+
+def test_selection_cursor_fires_the_row_it_is_on() -> None:
+    """A non-zero row's fire reaches the *matching* screen, not always FULL."""
+    flow = GameFlow(current_options=dict(options.PROFILES["updated"]))
+    _tick_until(flow, Screen.GAME_SELECTION)
+    flow.handle(InputEvent.DOWN)
+    flow.handle(InputEvent.DOWN)        # row 2 == SELECT_INSTRUCTIONS
+    assert flow.selection_row == 2
+    flow.handle(InputEvent.FIRE)
+    assert flow.screen is Screen.MANUAL
+    assert flow.sim is None, "INSTRUCTIONS does not start a game"
 
 
 def test_ctrl_1_starts_the_full_game() -> None:

@@ -1653,24 +1653,37 @@ class FrontEndMixin(RendererState):
         # cells, so its regions are recorded in pixels too rather than being
         # forced through the cell helper.
         self._hot_clear()
+        # **DEC-047, UPDATED only.** ORIGINAL's real screen has no cursor at
+        # all (R-32/D-018 - you press the key for what you want), so
+        # `flow.selection_row` only ever moves under UPDATED; `is_orig` here
+        # is the same test `flow._on_selection` gates the cursor keys on,
+        # kept in sync deliberately rather than duplicated with its own
+        # logic that could drift from it.
+        from ..core.options import is_original
+        is_orig = is_original(flow.options.as_dict())
 
         def _row_hot(n: int) -> None:
             rect = pygame.Rect(44, 122 + n * 12, 180, 12)
             self._hot_add(rect, "selection", n)
             # P5: the row under the pointer gets the paper/ink swap the panel
-            # uses for its cursor. This screen has no cursor of its own -- the
-            # ROM's has none either (R-32), you press the key for what you want
-            # -- so there is nothing for a hover to be confused with.
-            if self._hover == ("selection", n):
+            # uses for its cursor. This screen has no cursor of its own under
+            # ORIGINAL -- the ROM's has none either (R-32) -- so a hover is
+            # the only highlight there; under UPDATED the keyboard/joystick
+            # cursor (`flow.selection_row`) draws the same highlight too.
+            if self._hover == ("selection", n) or (
+                not is_orig and flow.selection_row == n
+            ):
                 pygame.draw.rect(self._surface, ink, rect)
 
         for i, (label, _mode) in enumerate(SELECTION_OPTIONS):
             key = f"CONTROL:{i + 1}" if chord else f"PRESS {i + 1}"
             _row_hot(i)
-            hovered = self._hover == ("selection", i)
+            lit = self._hover == ("selection", i) or (
+                not is_orig and flow.selection_row == i
+            )
             self._blit_at(f"{key}    {label}", 48, 126 + i * 12,
-                          paper if hovered else ink,
-                          bg=ink if hovered else paper)
+                          paper if lit else ink,
+                          bg=ink if lit else paper)
         # **Not the original.** The ROM's screen has exactly two rows; these
         # two are the remake's, and they print as bare "PRESS 3"/"PRESS 4"
         # under either front end because neither is a chord the ROM polls for
@@ -1683,16 +1696,17 @@ class FrontEndMixin(RendererState):
         # `flow._on_selection`'s own refusal: a row that still answers a key
         # it does not show would be worse than no row, and one that is drawn
         # but does nothing on fire would be the same trap from the other side.
-        from ..core.options import is_original
-        if not is_original(flow.options.as_dict()):
+        if not is_orig:
             extra_rows.append("CREDITS")
         for j, label in enumerate(extra_rows):
             _row_hot(extra + j)
-            hovered = self._hover == ("selection", extra + j)
+            lit = self._hover == ("selection", extra + j) or (
+                not is_orig and flow.selection_row == extra + j
+            )
             self._blit_at(f"PRESS {extra + j + 1}    {label}", 48,
                           126 + (extra + j) * 12,
-                          paper if hovered else ink,
-                          bg=ink if hovered else paper)
+                          paper if lit else ink,
+                          bg=ink if lit else paper)
         if not chord and self._debug_markers:
             # Armed with 0, so it is visible that it is on before a game starts.
             #

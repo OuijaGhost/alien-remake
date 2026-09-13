@@ -349,6 +349,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
 | [DISC-323](#disc-323-the-crew-survival-gap-is-probably-sample-size-noise-not-a-mechanism-gap) | 2026-09-05 | the crew-survival gap is probably sample-size noise, not a mechanism gap |
 | [DISC-324](#disc-324-screen-fx-turned-on-by-default-under-ouijaghost) | 2026-09-06 | `screen_fx` turned on by default under OUIJAGHOST |
 | [DISC-325](#disc-325-p-9-closed-by-calibration-not-mechanism-a-live-oracle-session-blocked-on-input-injection) | 2026-09-07 | P-9 closed by calibration, not mechanism - a live-oracle session blocked on input injection |
+| [DISC-326](#disc-326-game-selection-s-cursor-was-invented-once-removed-then-reintroduced-updated-only) | 2026-09-13 | GAME_SELECTION's cursor was invented once, removed, then reintroduced - UPDATED only |
 ---
 
 ## D-022 — The deck-plan room-identification mechanic (Upper/Middle/Lower Deck) is a blinking row-cursor
@@ -16170,3 +16171,43 @@ action total (fine at rate 1.0, never enough at rate 0.71 to cross the new
 accumulator's threshold) rather than the many the tests actually need. Full
 suite passed, mypy clean. See DECISIONS.md's DEC-046 for the full reasoning
 and the alternatives considered.
+
+## DISC-326 - GAME_SELECTION's cursor was invented once, removed, then reintroduced - UPDATED only
+
+**Found:** 2026-09-13, owner's request for a Steam Deck / gamepad-only
+workflow: *"Can the first menu support a highlight bar when played on the
+Steamdeck? So if there is only a Joystick or the mouse and no keyboard, the
+player can still highlight and select a choice hitting the A key?"*
+
+**This screen already had this once, and it was removed on purpose.**
+D-018 (live-confirmed): `$5F36` polls the keyboard latch `$91` for the
+literal Ctrl+1/Ctrl+2 chord and nothing else - no cursor, no ">" marker, no
+fire-select, on the real disk. An earlier pass had built exactly the
+up/down/fire cursor the owner was now asking for, found via live capture
+that it did not match the ROM, and deleted it (FV-1c1 found the gap in
+chord enforcement, FV-1c2 closed it). `flow._on_selection`'s own docstring
+has carried a comment about this removal ever since.
+
+**Put to the owner before touching it again, given that history**, and
+resolved as DEC-047: reintroduced, but gated to UPDATED only via the same
+`is_original(...)` test `options.pointer_allowed` already uses for the
+mouse. A follow-up question - should ORIGINAL get the same exception
+specifically on a Deck, since there is no keyboard to press the chord on at
+all - was also asked and **declined by the owner**, citing the standing
+ruling on the mouse (DEC-039-era: "ORIGINAL means the original machine too
+... a mouse is an addition like any other"). The documented answer for
+ORIGINAL on a Deck is a Steam Input controller remap sending the literal
+Ctrl+1/Ctrl+2 chord - satisfying the real decoded requirement, not routing
+around it.
+
+**Action:** shipped - `core/flow.py` (`GameFlow.selection_row`,
+`_on_selection`'s new UP/DOWN/FIRE branches, gated on `not
+is_original(...)`), `render/frontend.py` (`_draw_selection` draws the
+cursor through the same paper/ink highlight the screen's existing
+mouse-hover already used - no new visual language). Two new tests in
+`tests/test_remake_flow.py` (the cursor moves and wraps, fire resolves to
+whichever row it is on); the pre-existing `test_selection_is_ctrl_1_ctrl_2_
+only` had to start asking for ORIGINAL explicitly rather than trust the
+constructor's own non-ORIGINAL defaults. Full suite passed, mypy clean.
+See DECISIONS.md's DEC-047 for the full reasoning and the alternatives
+considered.
