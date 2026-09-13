@@ -1,0 +1,70 @@
+# Project configuration for the alientools toolkit (Phase 1).
+#
+# The src-layout package is made importable for the bare `python -m alientools`
+# CLI via an editable install into a project-local `.venv` (see README and
+# DECISIONS D-004). The toolkit itself stays stdlib-only at runtime; setuptools
+# is build-time tooling only.
+#
+# - pytest also finds the package via `pythonpath = ["src"]` (works pre-install).
+# - mypy type-checks the package directly with `python -m mypy src`.
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alientools"
+version = "0.0.0"
+description = "Pure-Python, stdlib-only toolkit to decode and disassemble the C64 game 'Alien' from its 1541 GCR nibble dump."
+requires-python = ">=3.12"
+# No *required* runtime dependencies. The Phase 1 toolkit (`alientools`) is
+# stdlib-only (DECISIONS D-001). The Phase 2 remake (`alien_remake`) needs a
+# rendering/audio backend; that is the one approved third-party dependency
+# (pygame-ce, DECISIONS D-009) and is kept OPTIONAL so the toolkit, the headless
+# remake core, and all gates run without it.
+dependencies = []
+
+[project.optional-dependencies]
+# `pip install -e .[remake]` adds the graphical backend for `python -m alien_remake`.
+#
+# numpy is not a new dependency so much as an undeclared one: `pygame.surfarray`
+# is the supported way to reach pixels and does not work without it, and the CRT
+# layer is built entirely on it. It was only ever present here because the dev
+# venv was made with `--system-site-packages`, so `pip install -e .[remake]`
+# into a clean environment shipped a game whose CRT layer could not run
+# (DISC-264). Declared, not vendored; still no cv2 (a 60 MB wheel for a 6 MB
+# game, doing what a handful of numpy lines do at 320x200).
+remake = ["pygame-ce>=2.5", "numpy>=1.26"]
+
+# `pip install -e .[dev]` adds what the gates need. Declared because a fresh
+# clone could not run its own test suite without them and nothing said so - the
+# same class of omission as numpy above, found the same way, by installing into
+# a clean environment and watching it fail.
+dev = ["pytest>=8", "mypy>=1.8"]
+
+[project.scripts]
+alientools = "alientools.cli:main"
+alien-remake = "alien_remake.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+# Tests live outside the package; check the toolkit itself (the part we must
+# trust). Later passes may extend `files` to cover tests if useful.
+
+# pygame-ce ships no type stubs and is an *optional* dependency, so it may not be
+# installed when the gate runs. Treat its imports as untyped rather than erroring
+# — the seam to it is isolated in alien_remake/render/pygame_app.py (D-009).
+[[tool.mypy.overrides]]
+module = ["pygame", "pygame.*"]
+ignore_missing_imports = true

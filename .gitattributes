@@ -1,0 +1,18 @@
+# Normalise line endings. Adopting git (2026-08-08) flipped the working tree to
+# CRLF, which silently broke multi-line text edits against the source and would
+# keep doing so. Keep LF everywhere except the Windows shells that need CRLF.
+* text=auto eol=lf
+
+*.ps1  text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binary assets — never touch these.
+*.png  binary
+*.wav  binary
+*.mp4  binary
+*.bin  binary
+*.prg  binary
+*.d64  binary
+*.nib  binary
+*.pdf  binary
