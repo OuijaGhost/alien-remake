@@ -88,7 +88,12 @@ Consumables are real ("…S LASER IS EXAUSTED", "…S EXTINGUISHER IS EMPTY",
 ### 1.4 Characters ($7935 locations; $6586 walk durations; $6581 alien move)
 
 Nine character slots: **0 = the Alien, 1–7 = crew in CONTROL-panel order
-(DALLAS, KANE, RIPLEY, ASH, LAMBERT, PARKER, BRETT), 8 = Jones**. `$FE` =
+(DALLAS, KANE, RIPLEY, ASH, LAMBERT, PARKER, BRETT), 8 = Jones** for the
+per-character tables such as the `$6586` walk durations. **Jones's room is
+not `$7935` slot 8, though: it is `$657D`** (`$88C3 STA $657D`, the next
+room picked one move ahead into `$657E`). Measured on the original
+(c64oracle, `walking.vsf`, DISC-327): over 10 minutes `$793D` stayed `$00`
+while `$657D` changed ~70 times, every 40 passes. `$FE` =
 removed/dead-without-a-body.
 
 - Static start: DALLAS/KANE/RIPLEY in COMMDCENTR, ASH/LAMBERT/PARKER in

@@ -131,8 +131,14 @@ def test_a_scripted_hunter_can_kill_the_alien() -> None:
     # 16 seeds after the change: 13 won, 2 lost, 1 still running at the cap,
     # so the property this test guards (winnable, but not *always*) still
     # holds; only this seed's label moved.
+    #
+    # **Re-anchored from seed 0 to seed 3 (DISC-327).** The Alien now crosses
+    # into and out of the ducting when its timer runs out, not when it
+    # decides to, so it stays with crew it meets instead of slipping away.
+    # Every seed traces a different game again. Re-swept 16 seeds: 11 won,
+    # 3 lost, 2 still running at the cap (was 13/2/1); seed 0 now loses.
     sim = Simulation(mode=GameMode.FULL, death_variant=DeathVariant.ORIGINAL,
-                     rng=random.Random(0))
+                     rng=random.Random(3))
     state = sim.state
     ignored: dict[str, int] = {}
 
@@ -475,11 +481,14 @@ def test_updated_is_still_winnable_with_the_breach_gates_on() -> None:
     that quietly makes UPDATED unwinnable again fails fast, the same
     function DISC-258's original test served for the un-gated question.
     """
+    # **Seed 0 -> 3 (DISC-327).** The duct-crossing timing fix reroutes every
+    # seeded game; the re-sweep finds 4 of 16 won with the gates on (was 6),
+    # and seed 0 is no longer one of them.
     outcome, damage, ticks = winnability_sweep.play(
-        0, cap=6000, weapon_breach_gates=True,
+        3, cap=6000, weapon_breach_gates=True,
     )
     assert outcome == "won", (
-        f"seed 0 is a known-winnable UPDATED game (alien damage "
+        f"seed 3 is a known-winnable UPDATED game (alien damage "
         f"{damage}/{K.UPDATED_ALIEN_DAMAGE_TO_KILL}, phase after {ticks} "
         "ticks) - if this regresses, the retuned gate or "
         "UPDATED_ALIEN_DAMAGE_TO_KILL has moved without re-sweeping"

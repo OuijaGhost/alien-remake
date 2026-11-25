@@ -350,6 +350,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
 | [DISC-324](#disc-324-screen-fx-turned-on-by-default-under-ouijaghost) | 2026-09-06 | `screen_fx` turned on by default under OUIJAGHOST |
 | [DISC-325](#disc-325-p-9-closed-by-calibration-not-mechanism-a-live-oracle-session-blocked-on-input-injection) | 2026-09-07 | P-9 closed by calibration, not mechanism - a live-oracle session blocked on input injection |
 | [DISC-326](#disc-326-game-selection-s-cursor-was-invented-once-removed-then-reintroduced-updated-only) | 2026-09-13 | GAME_SELECTION's cursor was invented once, removed, then reintroduced - UPDATED only |
+| [DISC-327](#disc-327-the-alien-crossed-into-and-out-of-the-ducts-40-passes-early) | 2026-11-25 | the Alien crossed into and out of the ducts 40 passes early |
 ---
 
 ## D-022 — The deck-plan room-identification mechanic (Upper/Middle/Lower Deck) is a blinking row-cursor
@@ -16211,3 +16212,67 @@ only` had to start asking for ORIGINAL explicitly rather than trust the
 constructor's own non-ORIGINAL defaults. Full suite passed, mypy clean.
 See DECISIONS.md's DEC-047 for the full reasoning and the alternatives
 considered.
+
+## DISC-327 - the Alien crossed into and out of the ducts 40 passes early
+
+**Found:** 2026-11-25, the first review of the remake against the original
+running in-process (`c64oracle`, seeded from `Archive/reference/walking.vsf`,
+ROMs from the HeadlessVICE install). The owner's report: the code reads as
+correct, but the game "still plays a little funny".
+
+**Method.** The same start state on both sides - crew rooms, health and
+composure, the Alien's room, timer, target and duct flag, Jones (`$657D`),
+grilles (`$8676`) and room damage (`$653F`) copied from the snapshot into a
+`Simulation` - then no input for 4000 main-loop passes, 20 runs each (the
+original varied through its RNG cells `$6519`/`$651A`, the remake through its
+seed). Every Alien decision was recorded as a reload of `$64EE` slot 0 /
+`Alien.timer`, with the duct flag either side of it.
+
+**What the original does.** A decision only sets the target and the timer:
+`$8A92` (come out: `$64E6` = this room, bit 7 clear, 40), `$89D7` (go in:
+this room + `$80`, 40), `$8AA8` (crawl on: neighbour + `$80`, `$6581` = 70).
+`$6501` changes on **arrival**, when `alien_tick` ($8ACE) finds the timer
+expired and reaches `$8B5D`: `$8B95 STA $6501` surfaces, `$8BBB STA $6501`
+goes in, a shut grille is burst instead (`$8B7F`/`$8BB4` -> `$8B84`, 40,
+`$8B94 RTS` with `$64E6` untouched, so the crossing is retried) - and then
+`JMP alien_ai_dispatch` picks the next move **in the same pass**. The crew
+check at `$8AD7` runs before `$8B5D`, and `$413C` never writes `$64E6`, so an
+Alien that has decided to duck into a vent while crew are in the room keeps
+holding the room and attacking for as long as they stay.
+
+**What the remake did.** `_begin_duct_action` cleared `in_duct` and
+`_begin_action` set it at decision time, and burst the grille there too: the
+Alien vanished into the vent (or appeared in the room) 40 passes early, and
+the encounter hold cleared the pending entry.
+
+**Measured (20 + 20 runs, 77 346 original passes, 80 000 remake passes):**
+
+| | original | remake before | remake after |
+|---|---|---|---|
+| crossings followed by the next move in the same pass (`D>S` 60, `S>D` 70) | 124 | 0 | 146 |
+| time in the ducting | 44.5% | 58.3% | 48.4% |
+| time on the surface with crew (holding, attacking) | 14.2% | 6.2% | 8.9% |
+| room changes per 1000 passes | 7.45 | 8.35 | 8.36 |
+
+Also confirmed live on the way, unchanged: the main loop at 7.87-7.95 passes
+a second with every pass 6-7 frames (nothing blocks it), duct moves 70 passes
+apart and surface moves 60, the `$89C4` re-roll loop under the hunt latch,
+and Jones moving every 40 passes (16.9 vs 16.8 moves per 1000 passes).
+`$8AFE LDA $6501 / BNE` - no `$6563` while still in the ducting - was folded
+into the same change.
+
+**Still open.** The remake still holds rooms with crew less (8.9% vs 14.2%)
+and changes room a little more (8.36 vs 7.45). Two leads: the original made
+13 pursuit moves (`$8A0C`, 20 passes) with `$7D45[0] = 0`, which
+`_roll_hunt` says cannot happen to an unhurt Alien; and it spent 3.6% of its
+time in a duct under a room with crew, against 0.4% in the remake.
+
+**Action:** `core/alien.py` - `Alien.dest_in_duct` (`$64E6` bit 7); decisions
+set it, `advance_alien` applies the crossing (or the burst) on arrival and
+keeps a pending entry through an encounter hold. Three unit tests in
+`tests/test_remake_alien.py` now pin decide -> wait -> cross. The winnability
+sweep reroutes every seed: ORIGINAL 13/16 -> 11/16 won, UPDATED (breach gates
+on) 6/16 -> 4/16; the two pinned tests moved from seed 0 to seed 3. UPDATED at
+25% is now under DEC-044's 30-60% band - left for the owner. Full suite
+passed, mypy clean. `docs/re/GAMEDATA.md` §1.4 corrected (Jones's room is
+`$657D`, not `$7935` slot 8).

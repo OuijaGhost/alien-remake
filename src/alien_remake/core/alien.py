@@ -264,6 +264,15 @@ class Alien:
     dest_id: str | None = None
     # Hidden in its room's duct (crew in the room are safe; it's unseen).
     in_duct: bool = False
+    #: **[C $64E6 bit 7] The duct state the in-flight move lands in.** A
+    #: decision only sets the target (`$8A92`/`$89DD`/`$8AA8`); the flag
+    #: `$6501` itself changes on **arrival**, when the timer runs out
+    #: (`$8B95 STA $6501` surfacing, `$8BBB STA $6501` going in). Until then
+    #: an Alien that has decided to leave a room is still standing in it, and
+    #: one that has decided to come out is still in the ducting. Measured on
+    #: the original (c64oracle, walking.vsf, 20 runs, DISC-327). Ignored while
+    #: ``dest_id`` is None.
+    dest_in_duct: bool = False
     # Set to the room whose grille it has just torn open ([C $8B84], P-6), for
     # the renderer's "GRILLE BURSTS OPEN" message; cleared once shown.
     burst_grille_room: str | None = None
@@ -498,17 +507,19 @@ def _grille_is_shut(ship: ShipMap, room_id: str) -> bool:
 def _burst_grille(ship: ShipMap, alien: Alien, room_id: str) -> bool:
     """The Alien tears a grille open — **[C $8B84]**, P-6.
 
-    Reached whenever it tries to cross a grille still in place, from either
-    side: emerging into a room (`$8B7F`) or ducking into one from the surface
-    (`$8BB4`). It does **not** move this turn — it clears that room's `$8676`
-    byte (the grille is gone permanently), pauses 40 ticks and raises the
-    "GRILLE BURSTS OPEN" event. Returns True if a grille was actually burst.
+    Reached on **arrival** (`advance_alien`) whenever the move that just
+    landed crosses a grille still in place, from either side: emerging into a
+    room (`$8B7F`) or ducking into one from the surface (`$8BB4`). It does
+    **not** cross this pass — it clears that room's `$8676` byte (the grille is
+    gone permanently), pauses 40 ticks and raises the "GRILLE BURSTS OPEN"
+    event, then `$8B94 RTS`. `$64E6` is left alone, so the crossing is retried
+    when those 40 ticks run out — the caller keeps the target. Returns True if
+    a grille was actually burst.
     """
     g = _grille(ship, room_id)
     if g is None or g.is_open:
         return False
     g.is_open = True                       # $8B86 STA $8676,Y
-    alien.dest_id = None                   # $8B94 RTS — no move this turn
     alien.timer = constants.ALIEN_BURST_TICKS
     alien.burst_grille_room = room_id      # for the renderer's message
     return True
@@ -531,12 +542,12 @@ def _begin_duct_action(ship: ShipMap, alien: Alien, rng: random.Random) -> None:
             continue                       # $8A83 JMP $8A7C
         break
     if roll >= constants.ALIEN_DUCT_EMERGE_FROM:
-        # Emerge here — bursting the grille first if it is still shut.
-        if _burst_grille(ship, alien, alien.room_id):
-            return
-        alien.in_duct = False              # $8B95 STA $6501 = 0
-        alien.dest_id = alien.room_id
-        alien.timer = constants.ALIEN_DUCT_TICKS
+        # Emerge here: `$8A92` targets this room without bit 7 and arms 40.
+        # It stays in the ducting until that runs out; the grille (if still
+        # shut) is burst and `$6501` cleared on arrival (`$8B7F`/`$8B95`).
+        alien.dest_id = alien.room_id      # $8A95 STA $64E6 (bit 7 clear)
+        alien.dest_in_duct = False
+        alien.timer = constants.ALIEN_DUCT_TICKS   # $8A98 LDA #$28
         return
     exits = ship.duct_exits(alien.room_id)
     order = [d for d in ("north", "east", "south", "west")]
@@ -548,7 +559,7 @@ def _begin_duct_action(ship: ShipMap, alien: Alien, rng: random.Random) -> None:
     # [C $8AAB `LDA $6581`] duct travel has its own, SLOWER duration (70) than
     # a surface move's literal 60 — crawling vs walking.
     alien.timer = constants.ALIEN_DUCT_TRAVEL_TICKS
-    alien.in_duct = True
+    alien.dest_in_duct = True              # $8AA6 ADC #$80: still in the ducts
 
 
 #: `$89C4`'s loop is unbounded in the ROM; bound it here so a pathological map
@@ -611,13 +622,13 @@ def _begin_action(ship: ShipMap, alien: Alien, rng: random.Random) -> None:
             if alien.room_id == _NARCISSUS_SLUG:
                 continue                       # `$89D0-$89D5` re-roll
             if _room_has_grille(ship, alien.room_id):
-                # [C $89D7/$8BB1] It wants the duct. If the grille is still shut
-                # it bursts it instead of moving (P-6); otherwise it slips in.
-                if _burst_grille(ship, alien, alien.room_id):
-                    return
-                alien.in_duct = True
-                alien.dest_id = alien.room_id
-                alien.timer = constants.ALIEN_DUCT_TICKS
+                # [C $89D7] It wants the duct: target this room with bit 7 set
+                # and arm 40. It is still standing here until that runs out;
+                # on arrival a shut grille is burst (`$8BB4`) or it slips in
+                # (`$8BBB STA $6501`).
+                alien.dest_id = alien.room_id  # $89DD STA $64E6 (+$80)
+                alien.dest_in_duct = True
+                alien.timer = constants.ALIEN_DUCT_TICKS   # $89E0 LDA #$28
                 return
             continue                           # no grille here: roll again
         # Real ship: the game's own route tables (§8.10); synthetic maps without
@@ -642,12 +653,11 @@ def _begin_action(ship: ShipMap, alien: Alien, rng: random.Random) -> None:
             # so the ROM's loop always terminates.
             if hunting:
                 continue                       # `$8A04 JMP $89C4`
-            alien.in_duct = False
             alien.dest_id = None               # `$89FA BEQ $8A11`: hold position
             alien.timer = constants.ALIEN_MOVE_TICKS          # `$89F2` #$3C
             return
-        alien.in_duct = False
         alien.dest_id = dest
+        alien.dest_in_duct = False             # a surface route: bit 7 clear
         if hunting:
             alien.aggression = 0               # `$8A09 STX $64B4` — latch spent
             alien.hunting = True               # `$4CB8 STA $64B4` — no corroding
@@ -657,7 +667,6 @@ def _begin_action(ship: ShipMap, alien: Alien, rng: random.Random) -> None:
         return
     # Every roll wanted a duct this room does not have. The ROM would spin
     # here; hold position instead of looping forever, and try again next action.
-    alien.in_duct = False
     alien.dest_id = None
     alien.timer = constants.ALIEN_MOVE_TICKS
 
@@ -734,12 +743,18 @@ def advance_alien(
     )
     alien.hunting = False                  # `$8A09` — the latch is spent
     arrived = alien.dest_id is None or alien.dest_id == alien.room_id
+    # The duct state this move lands in (`$64E6` bit 7); a held position
+    # (no target) keeps the current one.
+    lands_in_duct = alien.dest_in_duct if alien.dest_id is not None else alien.in_duct
     if alien.dest_id is not None:
         alien.room_id = alien.dest_id
     alien.dest_id = None
     # P-6: `in_duct` is not cleared unconditionally — the Alien travels
     # duct-to-duct and only surfaces when its own roller says to (`$8A92`),
-    # or after bursting a grille.
+    # or after bursting a grille. The flag still holds the state it was in
+    # *before* this arrival: an Alien that decided to duck into a vent is
+    # still in the room for the encounter check below (`$8AD7` runs before
+    # `$8B5D` applies the crossing).
     surfaced = not alien.in_duct
     if surfaced and _resolve_surface_action(
         ship, state, alien, rng, corrode=corrode, corrode_rate=corrode_rate
@@ -761,7 +776,12 @@ def advance_alien(
         # destination on the same pass, so it hit someone and immediately
         # walked out - exactly what the player reported. The hold applies on a
         # **miss** too: `$413C` re-arms before `$4152`'s roll is even taken.
-        alien.dest_id = None
+        #
+        # `$413C` never writes `$64E6`, so a pending duct entry survives the
+        # hold: the Alien keeps meaning to go into the vent, and tries again
+        # each time the hold runs out - while crew stay, it stays (DISC-327).
+        alien.dest_id = alien.room_id if lands_in_duct else None
+        alien.dest_in_duct = lands_in_duct
         alien.timer = constants.ALIEN_ENCOUNTER_HOLD_TICKS
         # `$8CD9 INC $6562` — the ATTACK panel is up, so the next pass does not
         # corrode. `reset_attack_state ($8C80)` clears it when the sequence ends.
@@ -772,8 +792,28 @@ def advance_alien(
     # An encounter pass returned above without reaching here, so it leaves the
     # flag alone: **the Alien does not corrode the room it is holding after
     # meeting crew**, which is the state the remake used to corrode hardest in.
-    alien.corrode_pending = arrived
+    # `$8AFE LDA $6501 / BNE $8B16` skips the re-raise while it is still in
+    # the ducting (the pre-crossing flag), so it never corrodes the room it
+    # has only just come out into.
+    alien.corrode_pending = arrived and not alien.in_duct
     alien.attack_sequence = False          # `reset_attack_state ($8C80)`
+    # **[C $8B5D] DISC-327 — the duct crossing lands here, on arrival.**
+    #
+    #     8B65  LDA $6501 / BEQ $8BA4   ; on the surface?
+    #     8B6D  CMP #$80 / BCC $8B7E    ; in the ducts, target without bit 7:
+    #     8B7F  LDA $8676,Y / BEQ $8B95 ;   grille shut -> burst, RTS
+    #     8B95  STA $6501               ;   else surface here
+    #     8BB4  LDA $8676,Y / BNE $8B84 ; on the surface, target with bit 7:
+    #     8BBB  STA $6501               ;   grille shut -> burst, else go in
+    #
+    # then `JMP alien_ai_dispatch`: the next move is chosen in the same pass.
+    if lands_in_duct != alien.in_duct:
+        if _burst_grille(ship, alien, alien.room_id):
+            # `$8B94 RTS` with `$64E6` untouched: crossing retried in 40.
+            alien.dest_id = alien.room_id
+            alien.dest_in_duct = lands_in_duct
+            return
+        alien.in_duct = lands_in_duct
     _begin_action(ship, alien, rng)
     return
 

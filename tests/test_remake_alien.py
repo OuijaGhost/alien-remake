@@ -287,11 +287,25 @@ def test_alien_bursts_a_shut_grille_instead_of_slipping_through() -> None:
     # **P2-21:** with the grille still SHUT the duct needs a roll of **15**
     # (`$89C7 CMP #$0F`), not 12 — the old `FixedRandom(0.9)` produced 14,
     # which the ROM treats as an ordinary surface move.
+    grille = next(g for g in ship.grilles if g.room_id == "A")
     advance_alien(ship, state, alien, RollRandom(15))
+    # **DISC-327:** the roll only sets the target (`$89DD`, bit 7) and arms 40.
+    # The grille is met on *arrival* (`$8BB4`), so nothing is burst yet.
+    assert alien.in_duct is False
+    assert alien.dest_in_duct is True
+    assert alien.timer == constants.ALIEN_DUCT_TICKS
+    assert grille.is_open is False
+    for _ in range(constants.ALIEN_DUCT_TICKS):
+        advance_alien(ship, state, alien, RollRandom(15))
     assert alien.in_duct is False            # it did NOT get in
     assert alien.timer == constants.ALIEN_BURST_TICKS
     assert alien.burst_grille_room == "A"
-    assert next(g for g in ship.grilles if g.room_id == "A").is_open is True
+    assert grille.is_open is True
+    # `$8B94 RTS` leaves `$64E6` alone: when the 40 run out it goes in.
+    assert alien.dest_in_duct is True
+    for _ in range(constants.ALIEN_BURST_TICKS):
+        advance_alien(ship, state, alien, RollRandom(15))
+    assert alien.in_duct is True
 
 
 def test_alien_slips_through_an_already_open_grille() -> None:
@@ -311,8 +325,14 @@ def test_alien_slips_through_an_already_open_grille() -> None:
     alien = Alien(room_id="A")
     rng = FixedRandom(value=0.9)
     advance_alien(ship, state, alien, rng)
-    assert alien.in_duct is True
+    # **DISC-327:** deciding to go in arms 40 with the Alien still in the room
+    # (`$89D7`); `$8BBB STA $6501` puts it in the ducting when that runs out.
+    assert alien.in_duct is False
+    assert alien.dest_in_duct is True
     assert alien.timer == constants.ALIEN_DUCT_TICKS
+    for _ in range(constants.ALIEN_DUCT_TICKS):
+        advance_alien(ship, state, alien, rng)
+    assert alien.in_duct is True
     # **Premise corrected with the one-pass restructure (D-100).** `alien_tick
     # ($8ACE)` resolves the action just *finished* — arrive, corrode, wound —
     # and only then dispatches the next one, so on the pass where the Alien
@@ -1257,9 +1277,9 @@ def test_an_open_grille_measurably_pulls_the_alien_into_the_ducts() -> None:
                 g.is_open = open_grille
             alien = Alien(room_id="commdcentr")
             _begin_action(ship, alien, rng)
-            # "went for the duct" = slipped in, or was stopped by the grille
-            # and tore it open instead (`$8BB4` -> `_burst_grille`).
-            if alien.in_duct or alien.burst_grille_room is not None:
+            # "went for the duct" = targeted the ducting (`$64E6` bit 7). The
+            # grille, open or shut, is only met on arrival (DISC-327).
+            if alien.dest_id is not None and alien.dest_in_duct:
                 wanted += 1
         return wanted / trials
 

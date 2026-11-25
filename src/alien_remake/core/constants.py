@@ -140,8 +140,9 @@ MORALE_BANDS: tuple[str, ...] = _MORALE_WORDS
 #
 # `$6581` (=70) is *not* this timer. It belongs to `alien_ai ($8A74)`, the
 # separate in-duct dispatcher that walks duct-to-duct via `$80F5`/`$8117`/
-# `$8139`/`$815B`. The remake simplifies that to "hide in the same room for
-# `ALIEN_DUCT_TICKS`, then re-emerge", so no code path uses 70 today.
+# `$8139`/`$815B`, modelled since P-6 as `ALIEN_DUCT_TRAVEL_TICKS` below
+# (`alien._begin_duct_action`). Live-measured on the original: duct moves come
+# 70 passes apart, surface moves 60 (c64oracle, DISC-327).
 #
 # Derivation: DISCOVERIES D-038.
 ALIEN_MOVE_TICKS = 60   # [C $8A4A] surface-move timer (was 70, corrected)
