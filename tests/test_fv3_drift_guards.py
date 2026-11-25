@@ -490,11 +490,15 @@ def test_the_pv_register_exists_and_covers_the_placeholders() -> None:
     the placeholders themselves are scattered through docstrings and are easy
     to lose track of, which is exactly why they were centralised.
     """
+    import os
     from pathlib import Path
 
-    todo = (Path(__file__).resolve().parent.parent / "todo.md").read_text(
-        encoding="utf-8"
-    )
+    todo_path = Path(__file__).resolve().parent.parent / "todo.md"
+    if os.environ.get("CI") and not todo_path.exists():
+        # todo.md is the owner's working register and is gitignored, so a CI
+        # checkout never has it. Locally a missing register still fails.
+        pytest.skip("todo.md is not published; this guard runs locally")
+    todo = todo_path.read_text(encoding="utf-8")
     assert "Placeholder register (`PV-nn`)" in todo
     filed = todo.count("**PV-")
     assert filed >= 30, f"only {filed} PV items filed; the sweep found 32"

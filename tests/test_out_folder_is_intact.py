@@ -19,6 +19,16 @@ import pytest
 
 from alien_remake import assets
 
+import needs                                       # noqa: E402
+
+#: These guard a *derived* `out/` against being tidied away. A checkout with no
+#: disk image has nothing derived to guard (CI, a fresh clone), so skip there;
+#: wherever the disk image is present, a missing file still fails loudly.
+pytestmark = pytest.mark.skipif(
+    not needs.NIB.exists(),
+    reason="no disk image here, so there is no derived out/ to guard",
+)
+
 #: Files under `out/` that the **test suite** opens directly — not the game.
 #: Each names the test that would otherwise skip in silence.
 SUITE_INPUTS: tuple[tuple[str, str], ...] = (

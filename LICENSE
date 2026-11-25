@@ -24,11 +24,15 @@ SOFTWARE.
 
 This licence covers ONLY the code in this repository.
 
-It does not cover, and this repository does not distribute:
+It does not cover:
 
 * "Alien" (1984), Mind Games / Argus Press Software — the game this project
   reimplements. Its code, data, artwork and text remain the property of their
-  owners. You supply your own copy of the disk; nothing derived from it is
-  committed here.
-* Commodore's BASIC, KERNAL and character-generator ROMs.
+  owners. You supply your own copy of the disk. The repository does include
+  material derived from it for study (the annotated disassembly in docs/re/,
+  the decoded tables in src/alien_remake/core/gamedata_snapshot.py, and
+  screenshots in docs/img/); that material is not licensed under MIT.
+* Commodore's BASIC, KERNAL and character-generator ROMs. The ROM files are not
+  included; the character ROM's glyph bitmaps are, in
+  src/alien_remake/render/c64font_data.py, and are not licensed under MIT.
 * The VICE emulator (GPL), used only as a development instrument.

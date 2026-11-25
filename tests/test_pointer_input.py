@@ -19,6 +19,7 @@ import os
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
 import pygame  # noqa: E402
+import pytest  # noqa: E402
 
 from alien_remake.core.flow import GameFlow, InputEvent, Screen  # noqa: E402
 from alien_remake.core.menu import MenuController  # noqa: E402
@@ -358,6 +359,10 @@ def test_the_arrows_are_only_offered_on_the_selected_row() -> None:
 
 
 def test_the_manual_pages_and_leaves_by_pointer() -> None:
+    from alien_remake.core import instructions
+
+    if len(instructions.pages()) < 2:
+        pytest.skip("MENU1.prg not extracted - the manual has no pages to turn")
     renderer, flow = _front(Screen.MANUAL)
     try:
         _click_region(renderer, flow, "manual_next")

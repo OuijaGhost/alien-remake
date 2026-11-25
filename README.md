@@ -9,8 +9,10 @@ A playable reimplementation of **Alien** (Mind Games / Argus Press Software,
   program and disassembles the 6502 code.
 * **`alien_remake`**: the game itself, built from what that reading turned up.
 
-**No game data is distributed here.** You supply your own disk image; the first
-run decodes the graphics, sprites, text and music out of it onto your machine.
+**No disk image, graphics, sprites or music are distributed here.** You supply
+your own disk image; the first run decodes the graphics, sprites, text and music
+out of it onto your machine. (A few things that describe the original *are*
+included — see [Licence](#licence) for exactly what.)
 
 ## The game, and the intent behind it
 
@@ -448,8 +450,11 @@ usual install locations by itself — nothing to configure, and VICE is never ru
 only read. Otherwise drop either filename into `out/` (the original names work;
 you do not have to rename them).
 
-They are deliberately **not** included here. They are Commodore's, and this
-project locates its sources rather than copying them in.
+The ROM files themselves are deliberately **not** included here. They are
+Commodore's, and this project locates its sources rather than copying them in.
+The one exception is the character ROM's glyph bitmaps: this repository already
+ships `c64font_data.py`, generated as above, so the loader screens use the real
+font out of the box. Delete it if you would rather not have it.
 
 ### Where your settings and logs go
 
@@ -785,6 +790,24 @@ corrected claim creeps back into the prose.
 
 The code is **MIT** — see [LICENSE](LICENSE). That covers this code only.
 
-**Alien** (1984) belongs to its owners. This project distributes no part of it:
-no disk image, no graphics, no music, no screenshots. Commodore's ROMs are not
-included either. Bring your own copy.
+**Alien** (1984) belongs to its owners, and so do Commodore's ROMs. Bring your
+own copy of the disk: this repository does not include the disk image, the game's
+graphics, sprites or music, or the BASIC/KERNAL/character ROM files.
+
+What it *does* include, so the reverse-engineering can be read and checked:
+
+* **The annotated disassembly and its notes** in [docs/re/](docs/re/) — the
+  original 6502 code, described instruction by instruction.
+* **Decoded game tables** in
+  [`gamedata_snapshot.py`](src/alien_remake/core/gamedata_snapshot.py): room and
+  crew names, the map and duct connections, item lists, the Alien's routes and
+  similar tables, generated from the disk by `python -m alientools gamedata`.
+* **Screenshots** in [docs/img/](docs/img/), including the original game's
+  screens as the remake reproduces them.
+* **The C64 character ROM's glyph bitmaps** in
+  [`c64font_data.py`](src/alien_remake/render/c64font_data.py), so the loader
+  screens use the real font. Deleting the file removes them; the game falls back
+  to a system font.
+
+These are included in good faith for preservation and study. If you hold rights
+in any of them and want something removed, open an issue.

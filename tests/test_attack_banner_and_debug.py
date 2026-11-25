@@ -202,6 +202,7 @@ def test_debug_markers_are_off_by_default_and_inert(
     Off by default, and drawing with it off must be byte-identical to a
     renderer that has never heard of it.
     """
+    needs.need(needs.CHARSET)  # markers use the game's own crew sprite
     flow, sim = _playing(renderer)
     assert renderer._debug_markers is False
 
@@ -323,6 +324,7 @@ def test_the_debug_overlay_is_off_by_default_and_byte_identical(
     renderer: PygameRenderer,
 ) -> None:
     """Same contract as the marker overlay: not the original, so inert until asked."""
+    needs.need(needs.CHARSET)  # markers use the game's own crew sprite
     flow, sim = _playing_with_menu(renderer)
     assert renderer._debug_markers is False
 
@@ -446,6 +448,7 @@ def test_the_overlay_distinguishes_a_ducted_alien(renderer: PygameRenderer) -> N
     as a surfaced one, which made it look like teleporting — a player watching
     debug mode reported exactly that.
     """
+    needs.need(needs.CHARSET)  # markers use the game's own crew sprite
     flow, sim = _playing_with_menu(renderer)
     assert sim.state.alien is not None
     alien = sim.state.alien

@@ -1,0 +1,51 @@
+# Run the project's two gates — the test suite and strict mypy — on every push
+# and pull request.
+#
+# CI has no disk image, no out/ and no C64 ROMs, so the tests that need them
+# skip (tests/needs.py) exactly as they do on a fresh clone. pygame runs
+# headless through SDL's dummy drivers.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: tests + mypy (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: python -m pip install -e ".[remake,dev]"
+
+      - name: Tests
+        run: python -m pytest -q
+
+      - name: Type check
+        run: python -m mypy

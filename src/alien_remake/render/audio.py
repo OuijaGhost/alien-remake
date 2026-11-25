@@ -100,6 +100,20 @@ def init_mixer() -> None:
         except pygame.error:
             pass
 
+
+def mixer_rate() -> int:
+    """The open mixer's sample rate.
+
+    Raises `TypeError` when no mixer is open — the same error indexing
+    `pygame.mixer.get_init()` raised before this existed, which the callers
+    already catch — so newer pygame-ce type stubs (which mark `get_init` as
+    returning ``None`` when closed) type-check without changing behaviour.
+    """
+    init = pygame.mixer.get_init()
+    if init is None:
+        raise TypeError("pygame mixer is not initialised")
+    return int(init[0])
+
 #: **S6 — the floor on retriggering an interface cue**, in milliseconds.
 #:
 #: Derived from the ROM's own cursor cadence rather than picked. `$5F36`'s
@@ -199,7 +213,7 @@ class AudioMixin(RendererState):
         sound: object | None = None
         try:
             init_mixer()
-            rate = pygame.mixer.get_init()[0]
+            rate = mixer_rate()
             # **Prefer the pre-rendered clip (DISC-254).** Synthesising on first
             # use costs a visible hitch — 809 ms for the airlock, landing as the
             # player commits to blowing the lock. `--derive-assets` writes these
@@ -224,7 +238,7 @@ class AudioMixin(RendererState):
             # Handing it a file-like object makes pygame parse the container
             # and convert mono->stereo properly.
             sound = pygame.mixer.Sound(
-                io.BytesIO(sfx.wav_bytes(pcm, pygame.mixer.get_init()[0]))
+                io.BytesIO(sfx.wav_bytes(pcm, mixer_rate()))
             )
         except (pygame.error, TypeError, ValueError) as exc:  # pragma: no cover
             print(f"alien-remake: sfx {effect!r} skipped ({exc})")
@@ -245,7 +259,7 @@ class AudioMixin(RendererState):
         sound: object | None = None
         try:
             init_mixer()
-            rate = pygame.mixer.get_init()[0]
+            rate = mixer_rate()
             divider = constants.heartbeat_divider(composure)
             cached = (
                 assets.find(f"sfx_heartbeat_{divider}.wav")
