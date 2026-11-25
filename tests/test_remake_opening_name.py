@@ -80,7 +80,7 @@ def test_the_overlap_with_the_message_is_exactly_two_columns() -> None:
 def test_the_message_keeps_the_roms_own_mixed_case() -> None:
     """**[C $0701, live oracle]** Lowercase, "ALIEN" excepted.
 
-    `tools/vice-mcp/opening_row19.json` — `" +??E?%,? HAS BEEN KILLED BY THE
+    `Archive/vice-mcp/opening_row19.json` — `" +??E?%,? HAS BEEN KILLED BY THE
     ALIEN"` — predates DISC-215's case-bit fix and is an artifact of the old
     decoder, not the ROM's bytes. A fresh live-oracle read of screen RAM at
     `$0701` decodes to `" has been killed by the ALIEN"`::

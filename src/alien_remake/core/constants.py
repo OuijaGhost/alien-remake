@@ -998,7 +998,7 @@ AUTO_DESTRUCT_TICKS = (AUTO_DESTRUCT_MINUTES + 1) * AUTO_DESTRUCT_SUBTICKS
 # [?] (measure against the running game, docs/re/VICE_CHECKS.md); these are
 # reasonable defaults at TICK_HZ (~6.7): title ~6 s, opening notice ~4 s.
 #
-# LIVE-CAPTURED boot order (D-021, tools/vice-mcp/capture_boot.py): the disk
+# LIVE-CAPTURED boot order (D-021, Archive/vice-mcp/capture_boot.py): the disk
 # boots into a "LOADING MENU" interstitial, the ShareData back-up NOTICE
 # (press-any-key), the "WELCOME TO ALIEN" front-end menu (1 ALIEN / Q QUIT), the
 # "DO YOU WANT INSTRUCTIONS? (Y OR N)" prompt, a "LOADING…. / PLUG JOYSTICK INTO
@@ -1026,7 +1026,7 @@ TITLE_TICKS = 197
 #: fast as the original's.
 OPENING_TICKS = 49
 # **[C-live] D-142 — MEASURED against the real disk image, 2026-08-06**
-# (`tools/vice-mcp/measure_greenvalley.py`, WarpMode off per the standing
+# (`Archive/vice-mcp/measure_greenvalley.py`, WarpMode off per the standing
 # constraint). Two earlier passes (D-140/D-141) guessed this from this
 # remake's own animation constants alone (2.2-2.8 s) — both far too short.
 # BASIC's POKE-loop drawing speed is genuinely slow on real hardware: the

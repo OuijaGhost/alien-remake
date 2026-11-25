@@ -234,7 +234,7 @@ _MOON_VIC_POS = (172, 50)
 # colour RAM read out of the running game: a crew member was poked into room
 # 34 and the ROM's own selection routine (`guard_alien_present $7720`) was
 # executed in place via a self-restoring patch to `main_loop`'s first JSR
-# (`tools/vice-mcp/capture_cockpit_real.py`), then `$0400`/`$D800` dumped.
+# (`Archive/vice-mcp/capture_cockpit_real.py`), then `$0400`/`$D800` dumped.
 # Saved as oracle captures in the project's standard format:
 # `docs/reference/narcissus_0400.bin` / `narcissus_d800.bin`.
 #
@@ -2358,7 +2358,7 @@ class PygameRenderer(
         """The real machine's cockpit screen+colour RAM (D-147), or None.
 
         `docs/reference/narcissus_0400.bin` / `narcissus_d800.bin`, captured
-        live by `tools/vice-mcp/capture_cockpit_real.py` — same 2-byte
+        live by `Archive/vice-mcp/capture_cockpit_real.py` — same 2-byte
         load-address format as the deck captures. Cached after first load.
         """
         if self._cockpit_capture is not None:

@@ -552,7 +552,7 @@ def test_narcissus_cockpit_is_drawn_from_the_real_machine_capture() -> None:
     `docs/reference/narcissus_0400.bin` / `narcissus_d800.bin` were captured
     by running the ROM's own selection routine (`guard_alien_present $7720`)
     live with a crew member poked into room 34
-    (`tools/vice-mcp/capture_cockpit_real.py`). The picture is three glyphs
+    (`Archive/vice-mcp/capture_cockpit_real.py`). The picture is three glyphs
     plus colour RAM — `$A0` solid hull, `$20` clear window, `$EE`/`$EF`
     dials — which is why no stored 540-byte template exists in the PRG and
     every static search for one failed.

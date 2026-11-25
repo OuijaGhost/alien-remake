@@ -139,7 +139,7 @@ crew step.
   and sets `$64BB = 1`.
 - **The front-end sequence is: title (egg/epigraph) → game-selection (portraits,
   Ctrl+1) → opening-death → play.** Scripted boot with fixed sleeps is
-  timing-fragile, so use **`tools/vice-mcp/boot_to_play.py`** — it detects each
+  timing-fragile, so use **`Archive/vice-mcp/boot_to_play.py`** — it detects each
   screen from screen RAM (`$0400`) and sends the right input, reliably reaching
   the play screen (tested: notice→welcome→instructions→title→selection→play in
   ~15 s). Forcing `$64BB=1` to skip ahead is **unstable** (game resets to menu).

@@ -306,7 +306,7 @@ _PORTRAIT_LABELS = (
 # confuse because both are rainbow rectangles.
 _SPIRAL_RINGS: tuple[int, ...] = tuple(range(11, 0, -1)) + tuple(range(1, 12))
 # **[C-live] D-142 — measured against the real machine (WarpMode off,
-# `tools/vice-mcp/measure_greenvalley.py`), 2026-08-06.** BASIC's own
+# `Archive/vice-mcp/measure_greenvalley.py`), 2026-08-06.** BASIC's own
 # POKE-loop drawing speed is genuinely slow: the spiral took ~11.0s to sweep
 # all 22 rings once on the real disk image, and the whole GREEN VALLEY
 # screen (spiral + "GREEN VALLEY"/"PUBLISHING" text + the `320
@@ -679,7 +679,7 @@ class FrontEndMixin(RendererState):
         whole — both go through the CENTER ROUTINE (`GOSUB390`), which grows
         each line outward from a fixed centre column one character-pair per
         pass, "GREEN VALLEY" completing before "PUBLISHING" starts. Live
-        capture confirmed this directly (`tools/vice-mcp/
+        capture confirmed this directly (`Archive/vice-mcp/
         capture_intro_animation.py`): "PUBLISHING" was caught as a lone "P"
         mid-growth before settling.
         """
@@ -1779,7 +1779,7 @@ class FrontEndMixin(RendererState):
         # sitting under "has", which is the "too much of the corrupt name
         # overlapping the words" the player reported.
         #
-        # **The casing was still wrong (DISC-220).** `tools/vice-mcp/
+        # **The casing was still wrong (DISC-220).** `Archive/vice-mcp/
         # opening_row19.json` — `" +??E?%,? HAS BEEN KILLED BY THE ALIEN"` — was
         # captured and decoded before DISC-215's case-bit fix, so its ALL-CAPS
         # reading is the pre-fix decoder's artifact, not the ROM's byte values.

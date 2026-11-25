@@ -282,7 +282,7 @@ class SidSynth:
         fc_reg = ((self.regs[0x16] << 3) | (self.regs[0x15] & 0x07)) & 0x7FF
         # **[C-live, P2-15, 2026-08-02] the base matters more than the slope.**
         # A 240-sample capture of the real disk playing the intro (WarpMode off,
-        # `tools/vice-mcp/p215_sid_diff.py`) shows the tune runs with
+        # `Archive/vice-mcp/p215_sid_diff.py`) shows the tune runs with
         # `$D417 = $F3` (resonance 15, **voices 1 and 2 routed through the
         # filter**), `$D418 = $9F` (volume 15, **low-pass**, voice 3 muted) and
         # — in 100% of samples — `$D415/$D416 = $00/$00`. So the cutoff register

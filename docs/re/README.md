@@ -50,7 +50,8 @@ Currently 420 citations over 1,155 addresses, and 40 open `[?]`.
 **[VICE_CHECKS.md](VICE_CHECKS.md)** — how to settle a `[?]` against the running
 game in an emulator: watchpoints, procedure, pitfalls. Its checkboxes are stale
 (everything in them was answered, mostly by static trace); the instructions are
-not.
+not. The capture scripts cited throughout as `Archive/vice-mcp/...` are the
+owner's local emulator harness and are not published in this repository.
 
 **[UNDOCUMENTED.md](UNDOCUMENTED.md)** — subroutines the code map reaches that
 nobody has explained. **Empty**: every one is accounted for. That is a coverage

@@ -379,7 +379,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
     `init_menu_ptr`, `$0E` → `init_ptr_menu2`, else → `init_ptr_menu3`) selects
     that deck and redraws (`$402A` ← 0/1/2). `$64FB` tracks the room index for
     the name/guard checks (`guard_alien_present $7720`).
-- **LIVE-VERIFIED (same day, MCP reachable over HTTP via `tools/vice-mcp/
+- **LIVE-VERIFIED (same day, MCP reachable over HTTP via `Archive/vice-mcp/
   vice_client.py`).** Reached the UPPER-DECK play screen
   (`out/vice_shots/deck_blink_00.png`) and corrected the static hypothesis:
   * **The "square markers" are STATIC char `$E6`** — a dithered checkerboard
@@ -429,7 +429,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
 ## D-021 — Dense boot capture pins the exact front-end/title visuals for a 1:1 remake
 - **Date:** 2026-07-11
 - **Finding:** A real-time (warp OFF) dense screenshot sweep of the whole boot
-  (`tools/vice-mcp/capture_boot.py`, ~73 shots in `out/vice_shots/boot_*.png`)
+  (`Archive/vice-mcp/capture_boot.py`, ~73 shots in `out/vice_shots/boot_*.png`)
   captured every front-end screen's exact layout, colours, and text — the piece
   D-018 (which pinned the boot *chain* symbolically) didn't have. In boot order:
   * **`boot_002` "LOADING MENU"** — blue text, centred, black field. A loading
@@ -570,7 +570,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
     **worsens by 1 each tick a character is in a duct** (`$6501,Y` set) —
     crawling the vents raises fear. `$7D55` read in 11 places (morale display,
     `$4843`, this stressor); its obey/refuse use (if any) is `[?]`.
-  * **Tooling:** `tools/vice-mcp/boot_to_play.py` (screen-RAM-detecting reliable
+  * **Tooling:** `Archive/vice-mcp/boot_to_play.py` (screen-RAM-detecting reliable
     boot); `vice_snapshot_save`/`_load` use a `name` param (snapshots live in
     `%APPDATA%\vice\mcp_snapshots\`). **GTK3VICE-3.9 snapshots do NOT load in
     the MCP build (3.11)** — version mismatch; use before/after memory dumps
@@ -3006,7 +3006,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
 - **Finding:** R-31 ("side-by-side behaviour verification vs. emulator") had
   been treated as needing a human comparison. Most of it does not: the game's
   state lives in flat byte tables, so the comparison can be **numeric**.
-- **`tools/vice-mcp/r31_side_by_side.py`** boots the real disk to the play
+- **`Archive/vice-mcp/r31_side_by_side.py`** boots the real disk to the play
   screen (using the *screen*, not the mislabelled `$64BB`, as the signal), dumps
   `$7935`/`$7D45`/`$6571`/`$6586`/`$64EE`/`$653F`/`$651C`/`$4B37`/`$82E3`, builds
   the equivalent remake `Simulation`, and diffs. **All 13 checks pass**, including
@@ -3042,7 +3042,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
   `intro.py` renders by running the game's *own* 6502 player and capturing its
   `$D400-$D418` writes — so those writes can simply be diffed against the real
   machine's.
-- **Method** (`tools/vice-mcp/r20_sid_verify.py`): boot the real disk to the
+- **Method** (`Archive/vice-mcp/r20_sid_verify.py`): boot the real disk to the
   TITLE screen where the player runs (`$60A8 != 0`), sample `$D400-$D418` plus
   the jiffy clock `$A0-$A2`, rebuild the remake's per-frame register state from
   `sid_writes`, align on the voice-1 frequency contour, and diff.
@@ -4227,7 +4227,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
 
 ## D-106 — P2-15: the intro's whole timbre hangs on one constant, settled live
 - **Date:** 2026-08-02
-- **Method:** `tools/vice-mcp/p215_sid_diff.py` boots the real disk (**WarpMode
+- **Method:** `Archive/vice-mcp/p215_sid_diff.py` boots the real disk (**WarpMode
   off**), drives the front end to the title where the tune plays, and samples
   `$D400`-`$D418` 240 times at 0.25 s. The point was to separate two
   possibilities behind "close but a little strange": is our *player* writing
@@ -4287,7 +4287,7 @@ marks a follow-up that refined the entry it hangs off rather than a new finding.
 ## D-108 — Methodology correction: SID registers are WRITE-ONLY, so do not read them
 - **Date:** 2026-08-02
 - **A capture I took for P2-15 was unsound and is retracted here.**
-  `tools/vice-mcp/p215_sid_diff.py` sampled `$D400`-`$D418` with
+  `Archive/vice-mcp/p215_sid_diff.py` sampled `$D400`-`$D418` with
   `vice_memory_read`. On a 6581 those registers are **write-only**: a read
   returns whatever is floating on the data bus, not the register.
 - **The tell was in the data, and it is worth recording as a trap.** `$D413`
@@ -5610,7 +5610,7 @@ worth revisiting once VICE access is available again.
 *2026-08-06. Settled by live measurement after D-140/D-141's two hand-guessed
 values (2.2s, then 2.28s) both turned out wrong in the same direction.*
 
-VICE came back online partway through. Wrote `tools/vice-mcp/measure_greenvalley.py`
+VICE came back online partway through. Wrote `Archive/vice-mcp/measure_greenvalley.py`
 — boots the real d64 fresh with WarpMode **off** (standing constraint), drives
 past the ShareData NOTICE screen, then polls screen RAM to timestamp state
 transitions. Measured timeline (seconds from notice-dismissed):
@@ -5885,7 +5885,7 @@ name's last two cells**. Only 8 garbled characters ever survive. But
 leading space could not erase them the way the ROM's `STA` does, and we drew
 all 10 codes — leaving two garbled glyphs sitting under "HAS". That is the
 player's "too much of the corrupt name overlapping the words". Verified
-against the archived live capture `tools/vice-mcp/opening_row19.json`:
+against the archived live capture `Archive/vice-mcp/opening_row19.json`:
 `" +??E?%,? HAS BEEN KILLED BY THE ALIEN"` — exactly 8 corrupt characters,
 one space, then a fully legible message. Fixed by truncating the name to the
 `_OPENING_MSG_COL - _OPENING_NAME_COL` cells that actually survive.
@@ -5991,7 +5991,7 @@ the ROM's own selection routine was run in place: poke a crew member's room to
 (`$719E`) to a trampoline that calls `guard_alien_present ($7720)` and
 **restores the original JSR operand before returning** — a one-shot, self-
 healing hook that leaves the game running normally afterwards
-(`tools/vice-mcp/capture_cockpit_real.py`). Screen RAM and colour RAM were then
+(`Archive/vice-mcp/capture_cockpit_real.py`). Screen RAM and colour RAM were then
 dumped and saved in the project's standard oracle format:
 `the live captures (not published)narcissus_0400.bin` / `narcissus_d800.bin`.
 
@@ -9178,7 +9178,7 @@ comments as provenance, which is the right split. Nothing to do.
 Everything neither part of the program nor useful to development: the
 one-time setup scripts and the 2026-06-25 legacy import. `archive/README.md`
 records what each folder is *and what deliberately stayed at the root* —
-the build runner, `tools/vice-mcp` (the live oracle) and the registers.
+the build runner, `Archive/vice-mcp` (the live oracle) and the registers.
 
 ## DISC-199 - the game cannot currently be won, and the corrosion gate was wrong
 
@@ -10341,7 +10341,7 @@ itself came back wrong: `$0701` decodes to `" has been killed by the ALIEN"` -
 lowercase, "ALIEN" excepted (its bytes are `$81 8C 89 85 8E`, capitals per
 DISC-215's high-bit rule). The code had `" HAS BEEN KILLED BY THE ALIEN"`.
 
-**Reason one: a stale capture.** `tools/vice-mcp/opening_row19.json` -
+**Reason one: a stale capture.** `Archive/vice-mcp/opening_row19.json` -
 `" +??E?%,? HAS BEEN KILLED BY THE ALIEN"` - was captured and decoded *before*
 DISC-215's case-bit fix, so its all-caps reading is the old decoder's artifact
 baked into a JSON file, not the ROM's bytes. The code had copied that stale
@@ -11615,7 +11615,7 @@ working install.
   sometimes".
 
 **Deliberately left relative:** the two VICE ROM fallbacks
-(`tools/vice-mcp/.../basic-901226-01.bin`, `chargen-901225-01.bin`) and
+(`Archive/vice-mcp/.../basic-901226-01.bin`, `chargen-901225-01.bin`) and
 `intro.py`'s `DEFAULT_PRG`/`DEFAULT_OUT`. These are developer conveniences
 pointing into this checkout, not shipped assets, and two tests key off
 `DEFAULT_PRG.exists()` to skip.
