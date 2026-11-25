@@ -100,7 +100,9 @@ def test_user_data_dir_follows_the_platform_convention(
     """
     monkeypatch.setattr(assets.sys, "platform", "win32")
     monkeypatch.setenv("LOCALAPPDATA", r"C:\Users\test\AppData\Local")
-    assert assets._platform_data_dir() == Path(r"C:\Users\test\AppData\Local\alien-remake")
+    # Joined rather than spelled with a backslash: off Windows `Path` is a
+    # PosixPath, where `\` is not a separator, so only the join is portable.
+    assert assets._platform_data_dir() == Path(r"C:\Users\test\AppData\Local") / "alien-remake"
 
     monkeypatch.setattr(assets.sys, "platform", "linux")
     monkeypatch.setenv("XDG_DATA_HOME", "/home/deck/.local/share")
